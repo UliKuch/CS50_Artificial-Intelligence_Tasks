@@ -2,6 +2,7 @@ import os
 import random
 import re
 import sys
+import copy
 
 DAMPING = 0.85
 SAMPLES = 10000
@@ -57,7 +58,24 @@ def transition_model(corpus, page, damping_factor):
     linked to by `page`. With probability `1 - damping_factor`, choose
     a link at random chosen from all pages in the corpus.
     """
-    raise NotImplementedError
+    prob_distribution = dict()
+
+    # same distribution for all if no links exist
+    if len(corpus[page]) == 0:
+        for corpus_page in corpus.keys():
+            prob_distribution[corpus_page] = 1 / len(corpus)
+        return prob_distribution
+
+    prob_from_corpus = (1 - damping_factor) / len(corpus)
+    prob_from_link = damping_factor / len(corpus[page])
+
+    for corpus_page in corpus.keys():
+        prob_distribution[corpus_page] = prob_from_corpus
+
+    for link in corpus[page]:
+        prob_distribution[link] += prob_from_link
+
+    return prob_distribution
 
 
 def sample_pagerank(corpus, damping_factor, n):
@@ -69,7 +87,28 @@ def sample_pagerank(corpus, damping_factor, n):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    pageviews = dict()
+    for page in corpus.keys():
+        pageviews[page] = 0
+
+    current_page = random.choice(list(pageviews.keys()))
+
+    # count which page was viewed by each sample
+    for _ in range(n):
+        pageviews[current_page] += 1
+        transition = transition_model(corpus, current_page, damping_factor)
+        current_page = random.choices(
+            population=list(transition.keys()),
+            weights=list(transition.values()),
+            k=1
+        )[0]
+
+    # pageranks consists of pageviews in relation to sample size
+    pageranks = dict()
+    for page in pageviews.keys():
+        pageranks[page] = pageviews[page] / n
+
+    return pageranks
 
 
 def iterate_pagerank(corpus, damping_factor):
@@ -81,7 +120,40 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
-    raise NotImplementedError
+    pagerank = dict()
+    for page in corpus.keys():
+        pagerank[page] = 1 / len(corpus)
+    
+    while True:
+        new_pagerank = dict()
+
+        # calculate pagerank for each page
+        for page in pagerank.keys():
+            sigma_linking_pages = 0
+
+            # check for pages linking to page in corpus
+            for linking_page in corpus.keys():
+                # if page is linked
+                if page in corpus[linking_page]:
+                    sigma_linking_pages += pagerank[linking_page] / len(corpus[linking_page])
+                # if no link on linking_page, treat it like having links to all pages
+                if len(corpus[linking_page]) == 0:
+                    sigma_linking_pages += pagerank[linking_page] / len(corpus)
+            
+            new_pagerank[page] = (1 - damping_factor) / len(corpus) + damping_factor * sigma_linking_pages
+
+        # compare values for pagerank and new_pagerank
+        counter = 0
+        for page in pagerank.keys():
+            if abs(pagerank[page] - new_pagerank[page]) >= 0.001:
+                counter += 1
+
+        # return if no value changed by more than 0.001
+        if counter == 0:
+            return new_pagerank
+        else:
+            # set pagerank to new values
+            pagerank = copy.deepcopy(new_pagerank)    
 
 
 if __name__ == "__main__":
