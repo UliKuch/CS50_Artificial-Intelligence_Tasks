@@ -60,7 +60,7 @@ def transition_model(corpus, page, damping_factor):
     """
     prob_distribution = dict()
 
-    # same distribution for all if no links exist
+    # same distribution for all if current page has no links
     if len(corpus[page]) == 0:
         for corpus_page in corpus.keys():
             prob_distribution[corpus_page] = 1 / len(corpus)
@@ -69,9 +69,11 @@ def transition_model(corpus, page, damping_factor):
     prob_from_corpus = (1 - damping_factor) / len(corpus)
     prob_from_link = damping_factor / len(corpus[page])
 
+    # probability for every page in corpus that page is chosen randomly
     for corpus_page in corpus.keys():
         prob_distribution[corpus_page] = prob_from_corpus
 
+    # add probability for pages linked to from current page
     for link in corpus[page]:
         prob_distribution[link] += prob_from_link
 
@@ -120,6 +122,7 @@ def iterate_pagerank(corpus, damping_factor):
     their estimated PageRank value (a value between 0 and 1). All
     PageRank values should sum to 1.
     """
+    # equal distribution as starting point
     pagerank = dict()
     for page in corpus.keys():
         pagerank[page] = 1 / len(corpus)
@@ -131,7 +134,7 @@ def iterate_pagerank(corpus, damping_factor):
         for page in pagerank.keys():
             sigma_linking_pages = 0
 
-            # check for pages linking to page in corpus
+            # check for pages linking to page in corpus to calculate sigma
             for linking_page in corpus.keys():
                 # if page is linked
                 if page in corpus[linking_page]:
@@ -140,16 +143,17 @@ def iterate_pagerank(corpus, damping_factor):
                 if len(corpus[linking_page]) == 0:
                     sigma_linking_pages += pagerank[linking_page] / len(corpus)
             
+            # apply PageRank formula
             new_pagerank[page] = (1 - damping_factor) / len(corpus) + damping_factor * sigma_linking_pages
 
         # compare values for pagerank and new_pagerank
-        counter = 0
+        deviation = False
         for page in pagerank.keys():
             if abs(pagerank[page] - new_pagerank[page]) >= 0.001:
-                counter += 1
+                deviation = True
 
         # return if no value changed by more than 0.001
-        if counter == 0:
+        if not deviation:
             return new_pagerank
         else:
             # set pagerank to new values
