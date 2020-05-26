@@ -62,7 +62,7 @@ def transition_model(corpus, page, damping_factor):
 
     # same distribution for all if current page has no links
     if len(corpus[page]) == 0:
-        for corpus_page in corpus.keys():
+        for corpus_page in corpus:
             prob_distribution[corpus_page] = 1 / len(corpus)
         return prob_distribution
 
@@ -70,7 +70,7 @@ def transition_model(corpus, page, damping_factor):
     prob_from_link = damping_factor / len(corpus[page])
 
     # probability for every page in corpus that page is chosen randomly
-    for corpus_page in corpus.keys():
+    for corpus_page in corpus:
         prob_distribution[corpus_page] = prob_from_corpus
 
     # add probability for pages linked to from current page
@@ -90,7 +90,7 @@ def sample_pagerank(corpus, damping_factor, n):
     PageRank values should sum to 1.
     """
     pageviews = dict()
-    for page in corpus.keys():
+    for page in corpus:
         pageviews[page] = 0
 
     current_page = random.choice(list(pageviews.keys()))
@@ -107,7 +107,7 @@ def sample_pagerank(corpus, damping_factor, n):
 
     # pageranks consists of pageviews in relation to sample size
     pageranks = dict()
-    for page in pageviews.keys():
+    for page in pageviews:
         pageranks[page] = pageviews[page] / n
 
     return pageranks
@@ -124,18 +124,18 @@ def iterate_pagerank(corpus, damping_factor):
     """
     # equal distribution as starting point
     pagerank = dict()
-    for page in corpus.keys():
+    for page in corpus:
         pagerank[page] = 1 / len(corpus)
     
     while True:
         new_pagerank = dict()
 
         # calculate pagerank for each page
-        for page in pagerank.keys():
+        for page in pagerank:
             sigma_linking_pages = 0
 
             # check for pages linking to page in corpus to calculate sigma
-            for linking_page in corpus.keys():
+            for linking_page in corpus:
                 # if page is linked
                 if page in corpus[linking_page]:
                     sigma_linking_pages += pagerank[linking_page] / len(corpus[linking_page])
@@ -147,10 +147,10 @@ def iterate_pagerank(corpus, damping_factor):
             new_pagerank[page] = (1 - damping_factor) / len(corpus) + damping_factor * sigma_linking_pages
 
         # compare values for pagerank and new_pagerank
-        deviation = False
-        for page in pagerank.keys():
-            if abs(pagerank[page] - new_pagerank[page]) >= 0.001:
-                deviation = True
+        deviation = any(
+            (abs(pagerank[page] - new_pagerank[page]) >= 0.001)
+            for page in pagerank
+        )
 
         # return if no value changed by more than 0.001
         if not deviation:
