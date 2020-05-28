@@ -139,46 +139,54 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    joint_prob = 1
+    joint_probability = 1
     for person in people:
         mother = people[person]["mother"]
         father = people[person]["father"]
-        prob_inheritance = 0
-        prob_trait = 0
 
-        if person in one_gene:
-            prob_trait = PROBS["trait"][1][person in have_trait]
-        
-            if not mother:
-                prob_inheritance = PROBS["gene"][1]
-            else:
-                prob_inheritance = inherits(mother, True, one_gene, two_genes) * inherits(father, False, one_gene, two_genes) + inherits(mother, False, one_gene, two_genes) * inherits(father, True, one_gene, two_genes)
-
-
-        elif person in two_genes:
-            prob_trait = PROBS["trait"][2][person in have_trait]
-
-            if not mother:
-                prob_inheritance = PROBS["gene"][2]
-            else:
-                prob_inheritance = inherits(mother, True, one_gene, two_genes) * inherits(father, True, one_gene, two_genes)
-
-
-            PROBS["trait"][2][person in have_trait]
+        if person in two_genes:
+            genes = 2
+        elif person in one_gene:
+            genes = 1
         else:
-            prob_trait = PROBS["trait"][0][person in have_trait]
+            genes = 0
 
-            if not mother:
-                prob_inheritance = PROBS["gene"][0]
-            else:
-                prob_inheritance = inherits(mother, False, one_gene, two_genes) * inherits(father, False, one_gene, two_genes)
+        trait_probability = PROBS["trait"][genes][person in have_trait]
+        joint_probability *= (
+            genes_probability(mother, father, genes, one_gene, two_genes) *
+            trait_probability
+        )
 
-        joint_prob *= prob_inheritance * prob_trait
+    return joint_probability
 
-    return joint_prob
+
+def genes_probability(mother, father, genes, one_gene, two_genes):
+    """
+    Return probability that a person has `genes` number of genes.
+    """
+    if not mother:
+        # no parents specified -> default values
+        return PROBS["gene"][genes]
+    elif genes == 1:
+        # two cases: inheriting from mother, but not from father, or vice versa
+        return (
+            inherits(mother, True, one_gene, two_genes) *
+            inherits(father, False, one_gene, two_genes) +
+            inherits(mother, False, one_gene, two_genes) *
+            inherits(father, True, one_gene, two_genes)
+        )
+    else:
+        # inheritance from both parents (2 genes) or none of them (0 genes)
+        return (
+            inherits(mother, genes == 2, one_gene, two_genes) *
+            inherits(father, genes == 2, one_gene, two_genes)
+        )
 
 
 def inherits(parent, inherits_gene, one_gene, two_genes):
+    """
+    Return probability that a person does or does not inherit gene from a parent.
+    """
     mutation = PROBS["mutation"]
 
     if parent in one_gene:
