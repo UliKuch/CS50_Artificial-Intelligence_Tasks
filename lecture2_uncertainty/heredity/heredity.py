@@ -139,7 +139,54 @@ def joint_probability(people, one_gene, two_genes, have_trait):
         * everyone in set `have_trait` has the trait, and
         * everyone not in set` have_trait` does not have the trait.
     """
-    raise NotImplementedError
+    joint_prob = 1
+    for person in people:
+        mother = people[person]["mother"]
+        father = people[person]["father"]
+        prob_inheritance = 0
+        prob_trait = 0
+
+        if person in one_gene:
+            prob_trait = PROBS["trait"][1][person in have_trait]
+        
+            if not mother:
+                prob_inheritance = PROBS["gene"][1]
+            else:
+                prob_inheritance = inherits(mother, True, one_gene, two_genes) * inherits(father, False, one_gene, two_genes) + inherits(mother, False, one_gene, two_genes) * inherits(father, True, one_gene, two_genes)
+
+
+        elif person in two_genes:
+            prob_trait = PROBS["trait"][2][person in have_trait]
+
+            if not mother:
+                prob_inheritance = PROBS["gene"][2]
+            else:
+                prob_inheritance = inherits(mother, True, one_gene, two_genes) * inherits(father, True, one_gene, two_genes)
+
+
+            PROBS["trait"][2][person in have_trait]
+        else:
+            prob_trait = PROBS["trait"][0][person in have_trait]
+
+            if not mother:
+                prob_inheritance = PROBS["gene"][0]
+            else:
+                prob_inheritance = inherits(mother, False, one_gene, two_genes) * inherits(father, False, one_gene, two_genes)
+
+        joint_prob *= prob_inheritance * prob_trait
+
+    return joint_prob
+
+
+def inherits(parent, inherits_gene, one_gene, two_genes):
+    mutation = PROBS["mutation"]
+
+    if parent in one_gene:
+        return 0.5
+    elif parent in two_genes:
+        return 1 - mutation if inherits_gene else mutation
+    else:
+        return mutation if inherits_gene else 1 - mutation
 
 
 def update(probabilities, one_gene, two_genes, have_trait, p):
